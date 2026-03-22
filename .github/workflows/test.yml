@@ -63,7 +63,7 @@ jobs:
       - name: Wait for services
         run: |
           echo "Waiting for services to be healthy..."
-          services=("vacancy-pg-test")
+          services=("vacancies-pg-test")
           for service in "${services[@]}"; do
             container_name=$(docker compose -f docker-compose.test.yml ps -q $service | xargs docker inspect --format '{{.Name}}' | sed 's/^\///')
             if [ -z "$container_name" ]; then
