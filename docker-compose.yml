@@ -1,0 +1,49 @@
+name: psyscreen-vacancies
+
+services:
+  vacancies-pg:
+    image: postgres:17-alpine
+    container_name: vacancies-pg
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-vacancies}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-vacancies123}
+      POSTGRES_DB: ${DATABASE_NAME:-vacancies}
+    ports:
+      - '${DATABASE_PORT:-5455}:5432'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DATABASE_USER:-vacancies} -d ${DATABASE_NAME:-vacancies}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    pull_policy: if_not_present
+
+  vacancies-zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: vacancies-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  vacancies-kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: vacancies-kafka
+    ports:
+      - '9094:9092'
+    depends_on:
+      - vacancies-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'vacancies-zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://vacancies-kafka:29092,PLAINTEXT_HOST://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
